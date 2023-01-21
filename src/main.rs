@@ -42,6 +42,12 @@ static GITIGNORE: &str = "\
 /.cache
 **/CMakeCache.txt";
 
+#[cfg(windows)]
+static SEP: &str = "\\";
+
+#[cfg(not(windows))]
+static SEP: &str = "/";
+
 trait Generator {
     fn generate_build_file(&self, config: &Config);
     fn setup_cmd(&self) -> &'static str;
@@ -82,7 +88,7 @@ impl Generator for CMakeGen {
         cmake_file.push_str("set(ERROR_LIST \"-Werror=return-type -Werror=unused-result\")\n");
         cmake_file.push_str("set(CMAKE_CXX_FLAGS \"${CMAKE_CXX_FLAGS} -std=c++20 -Wall -Wextra ${ERROR_LIST}\")\n");
         
-        fs::write(&(config.name.clone() + "\\CMakeLists.txt"), cmake_file).expect("Failed to create CMake file");
+        fs::write(&(config.name.clone() + SEP + "CMakeLists.txt"), cmake_file).expect("Failed to create CMake file");
     }
 
     fn setup_cmd(&self) -> &'static str {
@@ -134,14 +140,14 @@ impl Config {
 
         if self.use_conan {
             let conan_file = format!("[requires]\n\n[generators]\n{}", self.generator);
-            fs::write(&(self.name.clone() + "\\conanfile.txt"), conan_file).expect("Failed to create conanfile.txt file");
+            fs::write(&(self.name.clone() + SEP + "conanfile.txt"), conan_file).expect("Failed to create conanfile.txt file");
         }
 
         if self.use_clang_tidy {
-            fs::write(&(self.name.clone() + "\\.clang-tidy"), CLANG_TIDY).expect("Failed to create .clang-tidy file");
+            fs::write(&(self.name.clone() + SEP + ".clang-tidy"), CLANG_TIDY).expect("Failed to create .clang-tidy file");
         }
 
-        fs::write(&(self.name.clone() + "\\.gitignore"), GITIGNORE).expect("Failed to create .gitignore file");
+        fs::write(&(self.name.clone() + SEP + ".gitignore"), GITIGNORE).expect("Failed to create .gitignore file");
 
         println!("Done.");
     }
@@ -149,16 +155,16 @@ impl Config {
     fn create_default_dirs(&self) {
         let dirs = vec![
             self.name.clone(),
-            self.name.clone() + "\\src",
-            self.name.clone() + "\\include",
-            self.name.clone() + "\\build",
+            self.name.clone() + SEP + "src",
+            self.name.clone() + SEP + "include",
+            self.name.clone() + SEP + "build",
         ];
 
         for dir in &dirs {
             fs::create_dir(dir).expect(format!("Failed to create \"{}\" directory", dir).as_str());
         }
 
-        fs::write(dirs[1].clone() + "\\main.cpp", MAIN_CPP).expect("Failed to create main.cpp file");
+        fs::write(dirs[1].clone() + SEP + "main.cpp", MAIN_CPP).expect("Failed to create main.cpp file");
     }
 
     fn create_cmd_shell_files(&self, build: String, mut setup: String) {
@@ -166,8 +172,8 @@ impl Config {
             setup = format!("cd build\nconan install .. --build missing\ncd ..\n{}", setup);
         }
 
-        fs::write(&(self.name.clone() + "\\setup.bat"), setup).expect("Failed to create setup.bat file");
-        fs::write(&(self.name.clone() + "\\build.bat"), build).expect("Failed to create build.bat file");
+        fs::write(&(self.name.clone() + SEP + "setup.bat"), setup).expect("Failed to create setup.bat file");
+        fs::write(&(self.name.clone() + SEP + "build.bat"), build).expect("Failed to create build.bat file");
     }
 }
 
